@@ -121,54 +121,6 @@ function CareIcon({ kind, size = 22 }: { kind: CareKind; size?: number }) {
   return <Icon size={size} strokeWidth={1.8} />;
 }
 
-/* ─── Progres-lišta cesty žádosti: Podáno → Posuzování → Pořadník → Nabídka ─── */
-function ProgressTrack({ app }: { app: Application }) {
-  const current = progressIndex(app.stage);
-  const accepted = app.stage === "accepted";
-  return (
-    <div className="mt-3.5">
-      <div className="flex items-center">
-        {PROGRESS_STEPS.map((label, i) => {
-          const done = i < current || (accepted && i <= current);
-          const isCurrent = i === current && !accepted;
-          const lastDone = accepted && i === current;
-          return (
-            <div key={label} className="flex flex-1 items-center last:flex-none">
-              <div className="flex flex-col items-center gap-1">
-                <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[0.7333rem] font-bold transition-colors ${
-                    done || lastDone
-                      ? "bg-sage text-white"
-                      : isCurrent
-                      ? "bg-sage-l text-sage-d ring-2 ring-sage"
-                      : "bg-surface-2 text-ink-3"
-                  }`}
-                >
-                  {done || lastDone ? <Check size={14} strokeWidth={3} /> : i + 1}
-                </span>
-                <span
-                  className={`whitespace-nowrap text-[0.7333rem] font-medium ${
-                    done || isCurrent || lastDone ? "text-ink" : "text-ink-3"
-                  }`}
-                >
-                  {label}
-                </span>
-              </div>
-              {i < PROGRESS_STEPS.length - 1 && (
-                <span
-                  className={`mx-1.5 mb-5 h-[3px] flex-1 rounded-full ${
-                    i < current ? "bg-sage" : "bg-surface-2"
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /* ─── SEZNAM řádek ─── */
 function ListRow({ app, divider, onEnd, onDetail }: {
   app: Application; divider: boolean; onEnd: () => void; onDetail: () => void;
@@ -184,20 +136,20 @@ function ListRow({ app, divider, onEnd, onDetail }: {
       {/* Svislý barevný pruh — kotva podle typu péče */}
       <span className="w-1.5 shrink-0" style={{ background: accent.bar }} aria-hidden />
 
-      <div className="min-w-0 flex-1 px-4 py-4 sm:px-5">
+      <div className="min-w-0 flex-1 px-4 py-3 sm:px-5">
         {/* Zóna 1: identita — ikona + dominantní název */}
         <div className="flex items-start gap-3">
           <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
             style={{ background: accent.chipBg, color: accent.chipText }}
           >
-            <CareIcon kind={app.careKind} />
+            <CareIcon kind={app.careKind} size={18} />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="font-serif text-[1.2rem] font-medium leading-snug text-ink">
+            <h3 className="font-serif text-[1.1333rem] font-medium leading-snug text-ink">
               {app.facility}
             </h3>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8667rem] text-ink-2">
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8667rem] text-ink-2">
               <span className="flex items-center gap-1"><MapPin size={13} /> {app.location}</span>
               <span aria-hidden className="text-ink-3">·</span>
               <span
@@ -214,53 +166,65 @@ function ListRow({ app, divider, onEnd, onDetail }: {
 
         {/* Zóna 2: stav */}
         {needsAction ? (
-          <div className={`mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl px-4 py-3 ${isOffer ? "bg-amber-l" : "bg-peach-l"}`}>
+          <div className={`mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl px-3.5 py-2.5 ${isOffer ? "bg-amber-l" : "bg-peach-l"}`}>
             {isOffer
-              ? <CalendarClock size={18} className="shrink-0 text-amber" />
-              : <AlertTriangle size={18} className="shrink-0 text-peach" />}
-            <span className={`flex-1 text-[1rem] font-semibold ${isOffer ? "text-amber" : "text-peach"}`}>
+              ? <CalendarClock size={17} className="shrink-0 text-amber" />
+              : <AlertTriangle size={17} className="shrink-0 text-peach" />}
+            <span className={`flex-1 text-[0.9333rem] font-semibold ${isOffer ? "text-amber" : "text-peach"}`}>
               {app.stateLabel}
             </span>
-            <span className={`flex items-center gap-1.5 text-[0.9333rem] font-semibold ${isOffer ? "text-amber" : "text-peach"}`}>
+            <span className={`flex items-center gap-1.5 text-[0.8667rem] font-semibold ${isOffer ? "text-amber" : "text-peach"}`}>
               {app.stage === "action" && app.actionDue
-                ? <><CalendarClock size={15} /> do {app.actionDue}</>
-                : <><Clock size={15} /> {app.waitEstimate}</>}
+                ? <><CalendarClock size={14} /> do {app.actionDue}</>
+                : <><Clock size={14} /> {app.waitEstimate}</>}
             </span>
           </div>
         ) : (
-          // Skupina „Čeká se" — vizuální progres + lidský popis stavu
-          <div className="mt-3.5 rounded-xl border border-line bg-paper px-4 py-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span className="text-[1rem] font-semibold text-ink">{app.stateLabel}</span>
-              <span className="flex items-center gap-3 text-[0.8667rem]">
-                <span className="flex items-center gap-1 text-ink-2"><Clock size={14} /> {app.waitEstimate}</span>
-                {!ended && <ChanceDot app={app} />}
-              </span>
+          // Skupina „Čeká se" — kompaktní textový stav + cesta
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-paper px-3.5 py-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="text-[0.9333rem] font-semibold text-ink">{app.stateLabel}</span>
+              {!ended && <StagePath app={app} />}
             </div>
-            {!ended && <ProgressTrack app={app} />}
+            <span className="flex items-center gap-3 text-[0.8667rem]">
+              <span className="flex items-center gap-1 text-ink-2"><Clock size={14} /> {app.waitEstimate}</span>
+              {!ended && <ChanceDot app={app} />}
+            </span>
           </div>
         )}
 
-        {/* Zóna 3: akce — vždy viditelné tlačítko Detail */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+        {/* Zóna 3: akce — kompaktní řádek */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {needsAction && <PrimaryCTA app={app} />}
           <button
             onClick={onDetail}
-            className="flex items-center gap-1.5 rounded-lg border border-line-2 bg-surface px-4 py-2.5 text-[0.9333rem] font-medium text-ink hover:border-sage-bd hover:bg-sage-l a11y-tap"
+            className="flex items-center gap-1.5 rounded-lg border border-line-2 bg-surface px-3.5 py-2 text-[0.8667rem] font-medium text-ink hover:border-sage-bd hover:bg-sage-l a11y-tap"
           >
             Zobrazit detail
           </button>
           {needsAction && (
             <button
               onClick={onEnd}
-              className="flex items-center gap-1.5 rounded-lg border border-line-2 px-3.5 py-2.5 text-[0.9333rem] font-medium text-ink-2 hover:bg-surface-2 a11y-tap"
+              className="flex items-center gap-1.5 rounded-lg border border-line-2 px-3 py-2 text-[0.8667rem] font-medium text-ink-2 hover:bg-surface-2 a11y-tap"
             >
-              <X size={16} /> Ukončit
+              <X size={15} /> Ukončit
             </button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Kompaktní textová cesta žádosti (nahrazuje velkou progres-lištu) ─── */
+function StagePath({ app }: { app: Application }) {
+  const current = progressIndex(app.stage);
+  const label = PROGRESS_STEPS[current] ?? PROGRESS_STEPS[PROGRESS_STEPS.length - 1];
+  return (
+    <span className="hidden items-center gap-1.5 whitespace-nowrap text-[0.8rem] text-ink-3 sm:flex">
+      <span className="h-1.5 w-1.5 rounded-full bg-sage" aria-hidden />
+      Krok {current + 1} ze {PROGRESS_STEPS.length} · {label}
+    </span>
   );
 }
 
