@@ -7,12 +7,41 @@ import {
   Heart, Home, Building2, HandHeart, Sun, HelpCircle, MapPin, Clock,
   Brain, Activity, Accessibility, Users, ArrowRight, ArrowLeft, Check,
   Sparkles, ShieldCheck, UserRound, MessageSquare, AlertCircle,
-  Zap, Calendar, Leaf, MoreHorizontal, Phone, Eye, X,
+  Zap, Calendar, Leaf, MoreHorizontal, Phone, Eye, X, Landmark,
 } from "lucide-react";
 import { Logo } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
 import { useA11y } from "@/lib/a11y-context";
 import { PHONE_DISPLAY, PHONE_TEL, PHONE_HOURS } from "@/lib/contact";
+
+/* ─────────────────────────────────────────────
+   Loga poskytovatelů přihlášení (oficiální značky)
+   ───────────────────────────────────────────── */
+function GoogleLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z" />
+    </svg>
+  );
+}
+function AppleLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#000" aria-hidden="true">
+      <path d="M17.05 12.54c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.36 1.02-4.26 2.58-1.82 3.16-.47 7.83 1.3 10.39.86 1.25 1.89 2.66 3.23 2.61 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.02 2.29-1.28 3.14-2.54.99-1.45 1.4-2.86 1.42-2.93-.03-.01-2.72-1.04-2.75-4.13zM14.5 4.84c.71-.86 1.19-2.06 1.06-3.25-1.02.04-2.26.68-3 1.54-.66.76-1.24 1.98-1.08 3.15 1.14.09 2.3-.58 3.02-1.44z" />
+    </svg>
+  );
+}
+function SeznamLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="4" fill="#CC0000" />
+      <text x="12" y="16.5" textAnchor="middle" fontSize="13" fontWeight="700" fill="#fff" fontFamily="Arial, sans-serif">S</text>
+    </svg>
+  );
+}
 
 /* ─────────────────────────────────────────────
    Datový model odpovědí
@@ -1035,19 +1064,51 @@ function SaveProgress({ subject, answers: a, onGuest, onProvider }: {
         </div>
       ) : (
         <div className="mt-5 space-y-2.5 text-left">
+          {/* Ověřená identita */}
+          <button
+            onClick={() => onProvider("bank_id")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-sage-bd bg-sage-l/50 px-4 py-3.5 text-left transition-colors hover:bg-sage-l a11y-tap"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-sage-d">
+              <Landmark size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.9667rem] font-medium text-ink">Bankovní identita</span>
+              <span className="block text-[0.8rem] text-ink-2">Přihlášení jako do internetového bankovnictví</span>
+            </span>
+          </button>
+          <button
+            onClick={() => onProvider("identita_obcana")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition-colors hover:border-sage-bd a11y-tap"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-sage-d">
+              <ShieldCheck size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.9667rem] font-medium text-ink">Identita občana</span>
+              <span className="block text-[0.8rem] text-ink-2">Mobilní klíč, NIA ID nebo eObčanka</span>
+            </span>
+          </button>
+
+          <div className="flex items-center gap-3 py-1 text-[0.8rem] text-ink-3">
+            <span className="h-px flex-1 bg-line" /> nebo <span className="h-px flex-1 bg-line" />
+          </div>
+
+          {/* Poskytovatelé s logy */}
           {[
-            { p: "Google", cls: "border-line bg-surface" },
-            { p: "Apple", cls: "border-line bg-surface" },
-            { p: "Seznam", cls: "border-line bg-surface" },
+            { p: "Google", label: "Pokračovat přes Google", logo: <GoogleLogo /> },
+            { p: "Apple", label: "Pokračovat přes Apple", logo: <AppleLogo /> },
+            { p: "Seznam", label: "Pokračovat přes Seznam", logo: <SeznamLogo /> },
           ].map((o) => (
             <button
               key={o.p}
               onClick={() => onProvider(o.p)}
-              className={`flex w-full items-center justify-center gap-2.5 rounded-2xl border px-4 py-3.5 text-[1rem] font-medium text-ink transition-colors hover:border-sage-bd a11y-tap ${o.cls}`}
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3.5 text-[1rem] font-medium text-ink transition-colors hover:border-sage-bd a11y-tap"
             >
-              Pokračovat přes {o.p}
+              {o.logo} {o.label}
             </button>
           ))}
+
           <div className="flex items-center gap-3 py-1 text-[0.8rem] text-ink-3">
             <span className="h-px flex-1 bg-line" /> nebo <span className="h-px flex-1 bg-line" />
           </div>

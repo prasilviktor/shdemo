@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { A11yProvider } from "@/lib/a11y-context";
 import { SeniorProvider } from "@/lib/senior-context";
 import { ApplicationsProvider } from "@/lib/applications-context";
+import { SelectionProvider } from "@/lib/selection-context";
 
 export const metadata: Metadata = {
   title: "SENIOR HOUSE — Péče, koordinovaně.",
@@ -32,7 +33,9 @@ export default function RootLayout({
         <A11yProvider>
           <AuthProvider>
             <SeniorProvider>
-              <ApplicationsProvider>{children}</ApplicationsProvider>
+              <ApplicationsProvider>
+                <SelectionProvider>{children}</SelectionProvider>
+              </ApplicationsProvider>
             </SeniorProvider>
           </AuthProvider>
         </A11yProvider>

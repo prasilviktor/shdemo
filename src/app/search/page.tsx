@@ -13,6 +13,7 @@ import { ProviderMap } from "@/components/provider-map";
 import { ProviderMapMulti } from "@/components/provider-map-multi";
 import { providers } from "@/data/providers";
 import { useSenior } from "@/lib/senior-context";
+import { useSelection } from "@/lib/selection-context";
 import type {
   Provider, CareType, TransitLink,
   FacilityKind, CareCondition, MobilitySupport,
@@ -50,8 +51,38 @@ function mobilityFromProfile(mobilityText: string): MobilitySupport[] {
   return Array.from(out);
 }
 
-// Zařízení aktuálně vybraná k poptávce — v reálu by přišla z kontextu/store
-const SELECTED_IDS = new Set(["p1", "p2", "p3", "p4"]);
+/** Kritéria, podle kterých se počítá „shoda" — sbírá se z aktivních filtrů. */
+export type FitCriteria = {
+  kinds: FacilityKind[];
+  conditions: CareCondition[];
+  mobility: MobilitySupport[];
+  care24: boolean;
+  nurse247: boolean;
+  budget: number;
+};
+
+/** Spočítá, kolik z přání klienta zařízení splňuje, a vrátí slovní verdikt. */
+function fitVerdict(p: Provider, c: FitCriteria): { met: number; total: number; label: string; tone: "high" | "mid" | "low" } {
+  const checks: boolean[] = [];
+  if (c.kinds.length) checks.push(c.kinds.some((k) => p.facilityKinds.includes(k)));
+  if (c.conditions.length) checks.push(c.conditions.every((x) => p.conditions.includes(x)));
+  if (c.mobility.length) checks.push(c.mobility.every((m) => p.mobility.includes(m)));
+  if (c.care24) checks.push(p.care24);
+  if (c.nurse247) checks.push(p.nurse247);
+  // Rozpočet a dostupnost počítáme vždy jako přání
+  checks.push(p.monthlyCopay <= c.budget);
+  checks.push(true); // lokalita (Praha a okolí) — v datech všechna splňují
+
+  const total = checks.length;
+  const met = checks.filter(Boolean).length;
+  const ratio = met / total;
+  if (ratio >= 0.95) return { met, total, label: "Mimořádně vhodné", tone: "high" };
+  if (ratio >= 0.7) return { met, total, label: "Velmi vhodné", tone: "high" };
+  if (ratio >= 0.5) return { met, total, label: "Vhodné", tone: "mid" };
+  return { met, total, label: "Spíše orientačně", tone: "low" };
+}
+
+// (výběr zařízení k poptávce drží sdílený SelectionProvider)
 
 const careTypeLabel: Record<CareType, string> = {
   residential: "Pobytová péče", home: "Domácí péče", short_term: "Krátkodobá / respitní",
@@ -111,15 +142,8 @@ export default function SearchPage() {
     setAvailChoice("any");
   }
 
-  // Lokální stav výběru — inicializuje se z SELECTED_IDS
-  const [selected, setSelected] = useState<Set<string>>(new Set(SELECTED_IDS));
-  function toggleSelected(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
+  // Sdílený výběr napříč aplikací (košík)
+  const selection = useSelection();
 
   function toggle<T>(arr: T[], v: T, set: (x: T[]) => void) {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -149,6 +173,8 @@ export default function SearchPage() {
 
   const recommendedCount = providers.filter((p) => p.recommended).length;
   const allCount = providers.length;
+
+  const criteria: FitCriteria = { kinds, conditions, mobility, care24, nurse247, budget };
 
   const mapPoints = results.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, name: p.name, location: p.location, matchScore: p.matchScore }));
 
@@ -243,10 +269,11 @@ export default function SearchPage() {
               <ResultCard
                 key={p.id}
                 p={p}
+                verdict={fitVerdict(p, criteria)}
                 onDetail={() => setDetail(p)}
-                inSelected={selected.has(p.id)}
+                inSelected={selection.has(p.id)}
                 isRecommended={p.recommended}
-                onToggle={() => toggleSelected(p.id)}
+                onToggle={() => selection.toggle(p.id)}
               />
             ))}
             {results.length === 0 && (
@@ -266,7 +293,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {detail && <DetailModal p={detail} onClose={() => setDetail(null)} />}
+      {detail && <DetailModal p={detail} verdict={fitVerdict(detail, criteria)} onClose={() => setDetail(null)} />}
       {mapOpen && (
         <MapOverlay
           results={results} points={mapPoints} activeId={activeId}
@@ -278,13 +305,13 @@ export default function SearchPage() {
 }
 
 /* ─── Karta výsledku ─── */
-function ResultCard({ p, onDetail, inSelected, isRecommended, onToggle }: {
-  p: Provider; onDetail: () => void;
+function ResultCard({ p, verdict, onDetail, inSelected, isRecommended, onToggle }: {
+  p: Provider; verdict: { met: number; total: number; label: string; tone: "high" | "mid" | "low" }; onDetail: () => void;
   inSelected: boolean; isRecommended: boolean; onToggle: () => void;
 }) {
   const badges = badgesOf(p);
   return (
-    <article className={`card overflow-hidden ${p.matchScore >= 95 ? "ring-1 ring-sage-bd" : ""}`}>
+    <article className={`card overflow-hidden ${verdict.tone === "high" ? "ring-1 ring-sage-bd" : ""}`}>
       <div className="grid grid-cols-1 md:grid-cols-[260px,1fr,200px]">
         {/* Fotografie */}
         <div className="p-3">
@@ -317,6 +344,15 @@ function ResultCard({ p, onDetail, inSelected, isRecommended, onToggle }: {
               <p className="mt-0.5 flex items-center gap-1 text-[0.8rem] text-ink-3">
                 <MapPin size={11} /> {p.location} · {careTypeLabel[p.careTypes[0]]}
               </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.8rem] font-semibold ${
+                verdict.tone === "high" ? "bg-sage-l text-sage-d" : verdict.tone === "mid" ? "bg-amber-l text-amber" : "bg-surface-2 text-ink-2"
+              }`}>
+                {verdict.tone === "high" && <Check size={13} strokeWidth={2.5} />}
+                {verdict.label}
+              </div>
+              <div className="mt-1 text-[0.7333rem] text-ink-3">Splňuje {verdict.met} z {verdict.total} přání</div>
             </div>
           </div>
 
@@ -351,13 +387,16 @@ function ResultCard({ p, onDetail, inSelected, isRecommended, onToggle }: {
 
           {/* Přidat / Vybráno */}
           {inSelected ? (
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-sage-bd bg-sage-l px-3 py-2 text-[0.8667rem] font-medium text-sage-d">
-              <Check size={15} className="shrink-0" /> Vybráno k poptávce
-            </div>
+            <button
+              onClick={onToggle}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-sage-bd bg-sage-l px-3 py-2 text-[0.8667rem] font-medium text-sage-d hover:bg-sage-l/70 a11y-tap"
+            >
+              <Check size={15} className="shrink-0" /> Vybráno — odebrat
+            </button>
           ) : (
             <button
               onClick={onToggle}
-              className="btn btn-ghost mt-2 w-full border-sage-bd text-[0.8667rem] text-sage-d hover:bg-sage-l"
+              className="btn btn-ghost mt-2 w-full border-sage-bd text-[0.8667rem] text-sage-d hover:bg-sage-l a11y-tap"
             >
               <Plus size={15} /> Přidat k poptávce
             </button>
@@ -529,7 +568,11 @@ function MapOverlay({ results, points, activeId, setActiveId, onClose, onDetail 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-serif text-[1rem] font-medium leading-snug text-ink">{p.name}</h3>
-                    <span className="shrink-0 font-serif text-[1rem] font-medium text-sage-d">{p.matchScore}%</span>
+                    {p.recommended && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-sage-l px-2 py-0.5 text-[0.6667rem] font-semibold text-sage-d">
+                        <Sparkles size={9} /> Doporučeno
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 flex items-center gap-1 text-[0.7333rem] text-ink-3"><MapPin size={10} /> {p.location}</p>
                   <p className="mt-1 text-[0.8rem] text-ink-2 a11y-dim">{careTypeLabel[p.careTypes[0]]} · {p.availabilityLabel}</p>
@@ -553,7 +596,7 @@ function MapOverlay({ results, points, activeId, setActiveId, onClose, onDetail 
 }
 
 /* ─── Detail modal ─── */
-function DetailModal({ p, onClose }: { p: Provider; onClose: () => void }) {
+function DetailModal({ p, verdict, onClose }: { p: Provider; verdict: { met: number; total: number; label: string; tone: "high" | "mid" | "low" }; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
       <div className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-paper sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
@@ -569,8 +612,13 @@ function DetailModal({ p, onClose }: { p: Provider; onClose: () => void }) {
               <p className="mt-0.5 text-[0.8rem] text-ink-3">Zřizovatel: {p.operator}</p>
             </div>
             <div className="shrink-0 text-right">
-              <div className="font-serif text-[1.6rem] font-medium leading-none text-sage-d">{p.matchScore} %</div>
-              <div className="text-[0.6667rem] uppercase tracking-wider text-ink-3">shoda</div>
+              <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[0.9333rem] font-semibold ${
+                verdict.tone === "high" ? "bg-sage-l text-sage-d" : verdict.tone === "mid" ? "bg-amber-l text-amber" : "bg-surface-2 text-ink-2"
+              }`}>
+                {verdict.tone === "high" && <Check size={15} strokeWidth={2.5} />}
+                {verdict.label}
+              </div>
+              <div className="mt-1 text-[0.7333rem] text-ink-3">Splňuje {verdict.met} z {verdict.total} přání</div>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">

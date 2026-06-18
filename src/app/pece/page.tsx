@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Check, CircleDot, Circle, Upload, ArrowRight,
   FileText, MessageSquare, CalendarClock, Clock, ChevronRight,
@@ -12,6 +13,7 @@ import { providers } from "@/data/providers";
 import { AppShell } from "@/components/app-shell";
 import { useSenior, careWantedLabels } from "@/lib/senior-context";
 import { useApplications } from "@/lib/applications-context";
+import { useSelection } from "@/lib/selection-context";
 import { applicationSummary, stageMeta, type Application, type AppStage } from "@/data/applications";
 
 // Redesigned phases — from user's perspective, not internal process terminology
@@ -40,7 +42,7 @@ const toneBadge: Record<string, string> = {
 
 export default function PecePage() {
   return (
-    <AppShell title="Péče" greeting={false}>
+    <AppShell title="Přehled" greeting={false}>
       <Inner />
     </AppShell>
   );
@@ -200,7 +202,6 @@ function MiniApp({ app }: { app: Application }) {
   );
 }
 
-const RECOMMENDED_IDS = ["p1", "p2", "p3", "p4"];
 const MATCH_LABEL: Record<string, { text: string; cls: string }> = {
   high: { text: "Velmi vhodné", cls: "text-sage-d" },
   medium: { text: "Dobrá shoda", cls: "text-amber" },
@@ -208,7 +209,14 @@ const MATCH_LABEL: Record<string, { text: string; cls: string }> = {
 };
 
 function RecommendedFacilitiesCard() {
-  const recommended = providers.filter((p) => RECOMMENDED_IDS.includes(p.id));
+  const recommended = providers.filter((p) => p.recommended);
+  const selection = useSelection();
+  const router = useRouter();
+
+  function poptat() {
+    recommended.forEach((p) => selection.add(p.id));
+    router.push("/poptavka");
+  }
 
   return (
     <section className="overflow-hidden rounded-xl2 border border-sage-bd bg-surface shadow-soft">
@@ -264,11 +272,11 @@ function RecommendedFacilitiesCard() {
 
       {/* Dvě CTA */}
       <div className="grid grid-cols-2 gap-2 border-t border-sage-bd/60 bg-sage-l/20 px-5 py-3">
-        <Link href="/doporucena" className="btn btn-primary text-[0.8667rem]">
-          <Send size={14} /> Odeslat poptávky
-        </Link>
-        <Link href="/doporucena" className="btn btn-ghost text-[0.8667rem]">
-          Prohlédnout výběr <ChevronRight size={14} />
+        <button onClick={poptat} className="btn btn-primary text-[0.8667rem]">
+          <Send size={14} /> Poptat výběr
+        </button>
+        <Link href="/search" className="btn btn-ghost text-[0.8667rem]">
+          Prohlédnout vše <ChevronRight size={14} />
         </Link>
       </div>
     </section>
