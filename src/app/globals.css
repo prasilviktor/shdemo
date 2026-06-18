@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  /* Accessibility-adjustable scale (senior mode multiplies these) */
+  --fs-base: 15px;
+  --fs-mult: 1;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: calc(var(--fs-base) * var(--fs-mult));
+}
+
+body {
+  background: #faf8f5;
+  color: #2c2820;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4cfc6; border-radius: 99px; }
+
+@layer base {
+  h1, h2, h3, h4 {
+    font-family: "Lora", Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+  /* Minimální dotykový cíl pro všechny uživatele (WCAG); senior režim zvětšuje níže. */
+  .a11y-tap { min-height: 44px; }
+}
+
+/* ───────── Senior mode ─────────
+   Activated by data-senior="true" on <html>.
+   Bumps base size, weight, contrast and target sizes. */
+html[data-senior="true"] {
+  --fs-base: 18px;
+}
+html[data-senior="true"] body {
+  color: #1c1a16;
+  font-weight: 450;
+}
+html[data-senior="true"] .btn { padding: 0.85rem 1.5rem; }
+html[data-senior="true"] .field-input { padding: 0.85rem 1rem; }
+html[data-senior="true"] .a11y-dim { color: #524d45 !important; } /* lift muted text contrast */
+html[data-senior="true"] .a11y-tap { min-height: 48px; }
+
+/* Respektuj systémové nastavení omezeného pohybu */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .sh-container { @apply mx-auto w-full max-w-content px-5 sm:px-6; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5
+           text-sm font-medium transition-all duration-150
+           focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-sage focus-visible:ring-offset-2
+           focus-visible:ring-offset-paper disabled:opacity-40;
+  }
+  .btn-primary { @apply bg-sage text-white hover:bg-sage-d; }
+  .btn-ink { @apply bg-ink text-paper hover:bg-ink-2; }
+  .btn-ghost { @apply border border-line-2 bg-transparent text-ink-2 hover:bg-surface-2; }
+
+  .card { @apply rounded-xl2 border border-line bg-surface shadow-soft; }
+
+  .card-lbl {
+    @apply mb-3 flex items-center justify-between text-[10px] font-semibold
+           uppercase tracking-[0.08em] text-ink-3;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1
+           text-[11px] font-semibold;
+  }
+  .badge-sage { @apply bg-sage-l text-sage-d; }
+  .badge-amber { @apply bg-amber-l text-amber; }
+  .badge-peach { @apply bg-peach-l text-peach; }
+  .badge-neutral { @apply bg-surface-2 text-ink-2; }
+  .badge-sky { @apply bg-sky-l text-sky; }
+
+  .field-label { @apply mb-1.5 block text-[13px] font-medium text-ink-2; }
+  .field-input {
+    @apply w-full rounded-xl border border-line-2 bg-surface px-3.5 py-2.5 text-sm
+           text-ink placeholder:text-ink-3
+           focus:border-sage focus:outline-none focus:ring-2 focus:ring-sage/25;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1
+           text-[13px] font-medium transition-colors;
+  }
+}
+
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* Onboarding step transition */
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-in { animation: stepIn .35s ease both; }
+
+/* Leaflet sizing safety */
+.leaflet-container { font-family: "DM Sans", system-ui, sans-serif; }
