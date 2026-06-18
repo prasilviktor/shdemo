@@ -315,19 +315,22 @@ function ResultCard({ p, verdict, onDetail, inSelected, isRecommended, onToggle 
       onClick={onToggle}
       className={`card relative cursor-pointer overflow-hidden transition-all ${
         inSelected
-          ? "ring-2 ring-sage bg-sage-l/30"
+          ? "ring-2 ring-sage bg-sage-l/50"
           : "ring-1 ring-transparent hover:ring-sage-bd"
       }`}
     >
-      {/* Indikátor výběru v rohu */}
-      <div className="absolute right-3 top-3 z-10">
-        <span className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all ${
-          inSelected ? "border-sage bg-sage text-white" : "border-line-2 bg-surface/90 text-transparent"
-        }`}>
-          <Check size={15} strokeWidth={3} />
-        </span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-[260px,1fr,200px]">
+      <div className="grid grid-cols-1 md:grid-cols-[56px,260px,1fr,200px]">
+        {/* Zaškrtávátko — vlevo od fotky */}
+        <div
+          className={`flex items-center justify-center border-b border-line py-3 md:border-b-0 md:border-r ${inSelected ? "bg-sage-l" : "bg-paper-2/40"}`}
+        >
+          <span className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all ${
+            inSelected ? "border-sage bg-sage text-white" : "border-line-2 bg-surface text-transparent"
+          }`}>
+            <Check size={17} strokeWidth={3} />
+          </span>
+        </div>
+
         {/* Fotografie */}
         <div className="p-3">
           <ProviderVisual hue={p.hue} className="h-48 w-full rounded-xl sm:h-44 md:h-36" />
@@ -400,21 +403,15 @@ function ResultCard({ p, verdict, onDetail, inSelected, isRecommended, onToggle 
             <div className="mt-1 text-[0.8rem] text-ink-3">po příspěvku / měs.</div>
           </div>
 
-          {/* Přidat / Vybráno — výrazné */}
+          {/* Stav výběru + detail */}
           {inSelected ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggle(); }}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-sage px-3 py-3 text-[0.9rem] font-semibold text-white hover:bg-sage-d a11y-tap"
-            >
+            <div className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-sage px-3 py-3 text-[0.9rem] font-semibold text-white">
               <Check size={17} strokeWidth={2.5} /> Vybráno k poptávce
-            </button>
+            </div>
           ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggle(); }}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-sage bg-surface px-3 py-3 text-[0.9rem] font-semibold text-sage-d hover:bg-sage-l a11y-tap"
-            >
-              <Plus size={17} strokeWidth={2.5} /> Přidat k poptávce
-            </button>
+            <div className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-sage-bd bg-surface px-3 py-3 text-[0.9rem] font-semibold text-sage-d">
+              <Plus size={17} strokeWidth={2.5} /> Klepnutím vyberete
+            </div>
           )}
           <button onClick={(e) => { e.stopPropagation(); onDetail(); }} className="btn btn-ghost w-full text-[0.9333rem]">
             Zobrazit detail →

@@ -218,11 +218,9 @@ export function AppShell({
           paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
         }}
       >
+        <SelectionBar />
         {children}
       </main>
-
-      {/* ───────── Lišta výběru k poptávce ───────── */}
-      <SelectionBar />
 
       {/* ───────── Mobile bottom nav (fixed bottom) ───────── */}
       <nav
@@ -323,11 +321,8 @@ function SelectionBar() {
   const names = chosen.map((p) => p.name).join(" · ");
 
   return (
-    <div
-      className="fixed inset-x-0 z-40 px-4 md:left-[240px] md:px-7"
-      style={{ bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
-    >
-      <div className="mx-auto mb-3 flex max-w-3xl items-center gap-3 rounded-2xl bg-sage-d px-4 py-3 text-white shadow-soft-lg sm:px-5 sm:py-3.5 md:mb-4">
+    <div className="sticky top-0 z-20 px-4 pt-3 sm:px-7">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-2xl bg-sage-d px-4 py-3 text-white shadow-soft-lg sm:px-5 sm:py-3.5">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
           <ClipboardCheck size={20} />
         </span>
