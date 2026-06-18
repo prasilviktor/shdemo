@@ -8,6 +8,7 @@ import {
   MapPin, X, Plus, Sparkles, CheckCircle2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ProviderVisual } from "@/components/ui";
 import { useSelection } from "@/lib/selection-context";
 import { useApplications } from "@/lib/applications-context";
 import { useSenior } from "@/lib/senior-context";
@@ -37,6 +38,7 @@ function Inner() {
   const { active } = useSenior();
   const [step, setStep] = useState<Step>("recap");
   const [consent, setConsent] = useState(false);
+  const [detail, setDetail] = useState<Provider | null>(null);
 
   const chosen = providers.filter((p) => selected.includes(p.id));
 
@@ -118,8 +120,11 @@ function Inner() {
                   <div className="text-[0.9667rem] font-medium text-ink">{p.name}</div>
                   <div className="mt-0.5 flex items-center gap-1 text-[0.8333rem] text-ink-3"><MapPin size={11} /> {p.location}</div>
                 </div>
-                <span className={`shrink-0 rounded-full border px-3 py-1 text-[0.7667rem] font-medium ${v.cls}`}>{v.text}</span>
-                <button onClick={() => remove(p.id)} aria-label="Odebrat" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-2 hover:text-peach a11y-tap">
+                <span className={`hidden shrink-0 rounded-full border px-3 py-1 text-[0.7667rem] font-medium sm:inline-block ${v.cls}`}>{v.text}</span>
+                <button onClick={() => setDetail(p)} className="shrink-0 rounded-lg border border-line-2 px-3 py-2 text-[0.8rem] font-medium text-ink-2 hover:border-sage-bd hover:text-sage-d a11y-tap">
+                  Detail
+                </button>
+                <button onClick={() => remove(p.id)} aria-label="Odebrat ze výběru" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-2 hover:text-peach a11y-tap">
                   <X size={16} />
                 </button>
               </div>
@@ -150,6 +155,8 @@ function Inner() {
         <button onClick={() => setStep("confirm")} className="btn btn-primary mt-6 w-full py-3.5 text-[1rem] a11y-tap">
           Pokračovat <ArrowRight size={17} />
         </button>
+
+        {detail && <ProviderDetailModal p={detail} onClose={() => setDetail(null)} />}
       </div>
     );
   }
@@ -167,6 +174,24 @@ function Inner() {
       <p className="mt-1 text-[0.9333rem] text-ink-2 a11y-dim">
         Zkontrolujte, co {count} {count === 1 ? "zařízení obdrží" : "zařízení obdrží"}.
       </p>
+
+      {/* Kam poptávka půjde — souhrn (zde už needitovatelné) */}
+      <div className="mt-5 rounded-xl2 border border-line bg-surface p-5">
+        <h2 className="text-[0.7333rem] font-semibold uppercase tracking-wider text-ink-3">Poptávka půjde do</h2>
+        <div className="mt-3 space-y-2.5">
+          {chosen.map((p) => (
+            <div key={p.id} className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[0.7rem] font-semibold" style={{ background: `hsl(${p.hue},32%,92%)`, color: `hsl(${p.hue},34%,32%)` }}>
+                {p.initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[0.9333rem] font-medium text-ink">{p.name}</div>
+                <div className="flex items-center gap-1 text-[0.8rem] text-ink-3"><MapPin size={10} /> {p.location}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Co odešleme s poptávkou */}
       <div className="mt-5 rounded-xl2 border border-line bg-surface p-5">
@@ -213,6 +238,48 @@ function Inner() {
       {!consent && (
         <p className="mt-2 text-center text-[0.8rem] text-ink-3">Pro odeslání potvrďte souhlas se sdílením dokumentů.</p>
       )}
+    </div>
+  );
+}
+
+/* ─── Detail zařízení (kompaktní) ─── */
+function ProviderDetailModal({ p, onClose }: { p: Provider; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-paper sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="relative">
+          <ProviderVisual hue={p.hue} className="h-40 w-full" />
+          <button onClick={onClose} aria-label="Zavřít" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-paper/90 text-ink hover:bg-paper">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-6">
+          <h2 className="font-serif text-[1.3333rem] font-medium text-ink">{p.name}</h2>
+          <p className="mt-1 flex items-center gap-1 text-[0.8667rem] text-ink-3"><MapPin size={13} /> {p.location} · {p.operator}</p>
+
+          <p className="mt-4 text-[0.9333rem] leading-relaxed text-ink-2 a11y-dim">{p.description}</p>
+
+          {p.included?.length > 0 && (
+            <>
+              <h3 className="mt-5 text-[0.7333rem] font-semibold uppercase tracking-wider text-ink-3">V ceně</h3>
+              <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {p.included.map((it) => (
+                  <li key={it} className="flex items-start gap-2 text-[0.8667rem] text-ink-2 a11y-dim">
+                    <Check size={15} className="mt-0.5 shrink-0 text-sage" /> {it}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          <div className="mt-5 flex items-center justify-between rounded-xl border border-line bg-surface px-4 py-3">
+            <span className="text-[0.8333rem] text-ink-2">Doplatek po příspěvku</span>
+            <span className="font-serif text-[1.2rem] font-medium text-ink">od {p.monthlyCopay.toLocaleString("cs")} Kč / měs.</span>
+          </div>
+
+          <button onClick={onClose} className="btn btn-ghost mt-4 w-full a11y-tap">Zavřít</button>
+        </div>
+      </div>
     </div>
   );
 }

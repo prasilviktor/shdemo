@@ -205,6 +205,9 @@ export function AppShell({
         </div>
       </header>
 
+      {/* ───────── Lišta výběru (fixní pod hlavičkou) ───────── */}
+      <SelectionBar />
+
       {/* ───────── Main content ───────── */}
       {/*
         Padding top = header (56px) + safe-area-inset-top
@@ -218,7 +221,7 @@ export function AppShell({
           paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        <SelectionBar />
+        <SelectionBarSpacer />
         {children}
       </main>
 
@@ -321,31 +324,39 @@ function SelectionBar() {
   const names = chosen.map((p) => p.name).join(" · ");
 
   return (
-    <div className="sticky top-0 z-20 px-4 pt-3 sm:px-7">
-      <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-2xl bg-sage-d px-4 py-3 text-white shadow-soft-lg sm:px-5 sm:py-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
-          <ClipboardCheck size={20} />
-        </span>
+    <div
+      className="fixed inset-x-0 z-20 border-b border-sage-d/20 bg-sage-d px-4 md:left-[240px] sm:px-7"
+      style={{ top: "calc(56px + env(safe-area-inset-top, 0px))" }}
+    >
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 text-white">
+        <ClipboardCheck size={19} className="shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-[0.9667rem] font-semibold leading-tight">
-            {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"} k poptávce
-          </div>
-          <div className="truncate text-[0.7667rem] text-white/75">{names}</div>
+          <span className="text-[0.9333rem] font-semibold">
+            {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"}
+          </span>
+          <span className="ml-2 hidden truncate text-[0.8rem] text-white/70 sm:inline">{names}</span>
         </div>
         <button
           onClick={clear}
-          aria-label="Zrušit výběr"
-          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/80 hover:bg-white/10 sm:flex"
+          className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-[0.8rem] text-white/80 hover:bg-white/10 sm:flex"
         >
-          <X size={18} />
+          <X size={15} /> Zrušit
         </button>
         <button
           onClick={() => router.push("/poptavka")}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-[0.9rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[0.8667rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap"
         >
-          Poptat <ArrowRight size={16} />
+          Poptat <ArrowRight size={15} />
         </button>
       </div>
     </div>
   );
+}
+
+/* Mezera pod hlavičkou, když je lišta výběru aktivní (aby nezakrývala obsah). */
+function SelectionBarSpacer() {
+  const { count } = useSelection();
+  const pathname = usePathname();
+  if (count === 0 || pathname === "/poptavka") return null;
+  return <div className="h-14" />;
 }
