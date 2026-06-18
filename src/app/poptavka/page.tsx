@@ -27,6 +27,7 @@ function Inner() {
   const { createApplicationsFrom } = useApplications();
   const { active } = useSenior();
   const [sent, setSent] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const chosen = providers.filter((p) => selected.includes(p.id));
 
@@ -157,10 +158,32 @@ function Inner() {
       </div>
 
       <div className="sticky bottom-3 mt-5">
-        <button onClick={send} className="btn btn-primary w-full py-3.5 text-[1rem] a11y-tap">
+        <button onClick={() => setConfirming(true)} className="btn btn-primary w-full py-3.5 text-[1rem] a11y-tap">
           <Send size={17} /> Odeslat poptávky
         </button>
       </div>
+
+      {/* Druhá fáze — potvrzení, aby nešlo odeslat omylem */}
+      {confirming && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center" onClick={() => setConfirming(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-serif text-[1.3333rem] font-medium text-ink">
+              Opravdu odeslat poptávku?
+            </h2>
+            <p className="mt-2 text-[0.9333rem] leading-relaxed text-ink-2">
+              Poptávka půjde do {count} {count === 1 ? "zařízení" : count < 5 ? "zařízení" : "zařízení"} spolu s dokumenty z trezoru. Tuto akci nelze vzít zpět — zařízení vás začnou kontaktovat.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setConfirming(false)} className="btn btn-ghost flex-1 a11y-tap">
+                Zpět
+              </button>
+              <button onClick={send} className="btn btn-primary flex-1 a11y-tap">
+                <Send size={16} /> Ano, odeslat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

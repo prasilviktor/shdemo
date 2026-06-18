@@ -311,7 +311,22 @@ function ResultCard({ p, verdict, onDetail, inSelected, isRecommended, onToggle 
 }) {
   const badges = badgesOf(p);
   return (
-    <article className={`card overflow-hidden ${verdict.tone === "high" ? "ring-1 ring-sage-bd" : ""}`}>
+    <article
+      onClick={onToggle}
+      className={`card relative cursor-pointer overflow-hidden transition-all ${
+        inSelected
+          ? "ring-2 ring-sage bg-sage-l/30"
+          : "ring-1 ring-transparent hover:ring-sage-bd"
+      }`}
+    >
+      {/* Indikátor výběru v rohu */}
+      <div className="absolute right-3 top-3 z-10">
+        <span className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all ${
+          inSelected ? "border-sage bg-sage text-white" : "border-line-2 bg-surface/90 text-transparent"
+        }`}>
+          <Check size={15} strokeWidth={3} />
+        </span>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-[260px,1fr,200px]">
         {/* Fotografie */}
         <div className="p-3">
@@ -385,24 +400,24 @@ function ResultCard({ p, verdict, onDetail, inSelected, isRecommended, onToggle 
             <div className="mt-1 text-[0.8rem] text-ink-3">po příspěvku / měs.</div>
           </div>
 
-          {/* Přidat / Vybráno */}
+          {/* Přidat / Vybráno — výrazné */}
           {inSelected ? (
             <button
-              onClick={onToggle}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-sage-bd bg-sage-l px-3 py-2 text-[0.8667rem] font-medium text-sage-d hover:bg-sage-l/70 a11y-tap"
+              onClick={(e) => { e.stopPropagation(); onToggle(); }}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-sage px-3 py-3 text-[0.9rem] font-semibold text-white hover:bg-sage-d a11y-tap"
             >
-              <Check size={15} className="shrink-0" /> Vybráno — odebrat
+              <Check size={17} strokeWidth={2.5} /> Vybráno k poptávce
             </button>
           ) : (
             <button
-              onClick={onToggle}
-              className="btn btn-ghost mt-2 w-full border-sage-bd text-[0.8667rem] text-sage-d hover:bg-sage-l a11y-tap"
+              onClick={(e) => { e.stopPropagation(); onToggle(); }}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-sage bg-surface px-3 py-3 text-[0.9rem] font-semibold text-sage-d hover:bg-sage-l a11y-tap"
             >
-              <Plus size={15} /> Přidat k poptávce
+              <Plus size={17} strokeWidth={2.5} /> Přidat k poptávce
             </button>
           )}
-          <button onClick={onDetail} className="btn btn-ghost w-full text-[0.9333rem]">
-            Detail →
+          <button onClick={(e) => { e.stopPropagation(); onDetail(); }} className="btn btn-ghost w-full text-[0.9333rem]">
+            Zobrazit detail →
           </button>
         </div>
       </div>

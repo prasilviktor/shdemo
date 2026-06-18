@@ -7,11 +7,13 @@ import {
   LayoutDashboard, Search,
   FolderLock, MessagesSquare, Phone, LogOut, Bell,
   ChevronDown, Plus, Check, ClipboardList, UserCog, LifeBuoy,
-  Menu, X,
+  Menu, X, ClipboardCheck, ArrowRight,
 } from "lucide-react";
 import { Logo } from "./ui";
 import { SeniorModeToggle } from "./senior-mode-toggle";
 import { useAuth } from "@/lib/auth-context";
+import { useSelection } from "@/lib/selection-context";
+import { providers } from "@/data/providers";
 import { useSenior } from "@/lib/senior-context";
 import { PHONE_DISPLAY, PHONE_TEL, PHONE_HOURS } from "@/lib/contact";
 
@@ -19,7 +21,7 @@ import { PHONE_DISPLAY, PHONE_TEL, PHONE_HOURS } from "@/lib/contact";
    „Doporučená" žije jako výchozí pohled v Hledat, koordinátor v Zprávách a na Přehledu. */
 const navPrimary = [
   { href: "/pece",     label: "Přehled",  icon: LayoutDashboard },
-  { href: "/search",   label: "Hledat",   icon: Search },
+  { href: "/search",   label: "Najít péči", icon: Search },
   { href: "/zadosti",  label: "Žádosti",  icon: ClipboardList, badge: 2 },
   { href: "/messages", label: "Zprávy",   icon: MessagesSquare, badge: 2 },
   { href: "/pomoc",    label: "Pomoc",    icon: LifeBuoy },
@@ -219,6 +221,9 @@ export function AppShell({
         {children}
       </main>
 
+      {/* ───────── Lišta výběru k poptávce ───────── */}
+      <SelectionBar />
+
       {/* ───────── Mobile bottom nav (fixed bottom) ───────── */}
       <nav
         className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-surface md:hidden"
@@ -303,4 +308,49 @@ function seniorInitials(name: string) {
   const parts = (name || "").trim().split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return (name || "?").slice(0, 2).toUpperCase();
+}
+
+/* ─── Výrazná lišta výběru zařízení k poptávce ─── */
+function SelectionBar() {
+  const { selected, count, clear } = useSelection();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Na samotné stránce poptávky lištu neukazujeme
+  if (count === 0 || pathname === "/poptavka") return null;
+
+  const chosen = providers.filter((p) => selected.includes(p.id));
+  const names = chosen.map((p) => p.name).join(" · ");
+
+  return (
+    <div
+      className="fixed inset-x-0 z-40 px-4 md:left-[240px] md:px-7"
+      style={{ bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+    >
+      <div className="mx-auto mb-3 flex max-w-3xl items-center gap-3 rounded-2xl bg-sage-d px-4 py-3 text-white shadow-soft-lg sm:px-5 sm:py-3.5 md:mb-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
+          <ClipboardCheck size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[0.9667rem] font-semibold leading-tight">
+            {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"} k poptávce
+          </div>
+          <div className="truncate text-[0.7667rem] text-white/75">{names}</div>
+        </div>
+        <button
+          onClick={clear}
+          aria-label="Zrušit výběr"
+          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/80 hover:bg-white/10 sm:flex"
+        >
+          <X size={18} />
+        </button>
+        <button
+          onClick={() => router.push("/poptavka")}
+          className="flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-[0.9rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap"
+        >
+          Poptat <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
 }
