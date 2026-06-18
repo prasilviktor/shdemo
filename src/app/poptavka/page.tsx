@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Check, MapPin, Clock, Star, Sparkles, Send, ChevronRight,
@@ -59,6 +59,18 @@ function Inner() {
   const [detailProvider, setDetailProvider] = useState<Provider | null>(null);
   const [sentProviders, setSentProviders] = useState<Provider[]>([]);
 
+  // Zařízení viditelná v seznamu. Jakmile se objeví, zůstávají — odznačení
+  // jen odepne checkbox, kartu nechá na místě (lze znovu připnout).
+  const [visibleIds, setVisibleIds] = useState<string[]>(selected);
+  useEffect(() => {
+    setVisibleIds((prev) => {
+      const next = [...prev];
+      for (const id of selected) if (!next.includes(id)) next.push(id);
+      return next;
+    });
+  }, [selected]);
+
+  const visibleProviders = providers.filter((p) => visibleIds.includes(p.id));
   const selectedProviders = providers.filter((p) => selected.includes(p.id));
 
   function confirmSend() {
@@ -86,7 +98,7 @@ function Inner() {
 
       {status === "idle" && (
         <>
-          {count === 0 ? (
+          {visibleProviders.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-line-2 py-12 text-center">
               <p className="text-[1rem] text-ink">Nemáte vybraná žádná zařízení.</p>
               <p className="mt-2 text-[0.8667rem] text-ink-2 a11y-dim">Vyberte zařízení v Najít péči a pak je poptáte najednou.</p>
@@ -95,7 +107,7 @@ function Inner() {
           ) : (
             <>
               <div className="mt-5 flex flex-col gap-3">
-                {selectedProviders.map((p) => (
+                {visibleProviders.map((p) => (
                   <FacilityCard
                     key={p.id}
                     provider={p}
@@ -115,11 +127,16 @@ function Inner() {
 
               <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-sage-bd bg-sage-l/30 px-5 py-4">
                 <p className="text-[0.8667rem] text-ink-2">
-                  <span className="font-medium text-ink">{count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"}</span> — poptáme je za vás.
+                  {count === 0 ? (
+                    <span className="font-medium text-ink">Žádné zařízení není zaškrtnuté</span>
+                  ) : (
+                    <><span className="font-medium text-ink">{count} {count === 1 ? "zařízení zaškrtnuto" : count < 5 ? "zařízení zaškrtnuta" : "zařízení zaškrtnuto"}</span> — poptáme je za vás.</>
+                  )}
                 </p>
                 <button
                   onClick={() => setStatus("confirming")}
-                  className="btn btn-primary shrink-0"
+                  disabled={count === 0}
+                  className="btn btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={15} /> Poptat vybraná <ChevronRight size={15} />
                 </button>
@@ -165,7 +182,7 @@ function FacilityCard({ provider: p, selected, onToggle, onDetail }: {
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
             selected ? "border-sage bg-sage text-white" : "border-line-2 bg-surface"
           }`}
-          aria-label={selected ? "Odebrat ze výběru" : "Přidat do výběru"}
+          aria-label={selected ? "Odepnout z výběru" : "Připnout do výběru"}
         >
           {selected && <Check size={13} strokeWidth={3} />}
         </button>

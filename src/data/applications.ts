@@ -243,7 +243,7 @@ export const APPLICATIONS: Application[] = [
     location: "Kladno",
     careKind: "residential",
     stage: "waitlist",
-    stateLabel: "Zařazeno do pořadníku — 8. místo",
+    stateLabel: "Zařazeno do pořadníku",
     updatedAt: now - 4 * DAY,
     submittedAt: now - 12 * DAY,
     chance: "medium",
@@ -252,14 +252,14 @@ export const APPLICATIONS: Application[] = [
     contactName: "Mgr. Lucie Horáková",
     contactRole: "Vedoucí sociálního úseku",
     coordinatorNote:
-      "Dobré zařízení, ale delší pořadník. Držíme jako záložní variantu — pozici budeme sledovat.",
+      "Dobré zařízení, ale delší pořadník. Držíme jako záložní variantu.",
     requiredDocs: [
       { name: "Žádost o přijetí", status: "verified" },
       { name: "Lékařská zpráva (praktik)", status: "verified" },
     ],
     history: [
       { at: now - 12 * DAY, from: "coordinator", text: "Odeslána žádost o přijetí." },
-      { at: now - 4 * DAY, from: "provider", text: "Žádost přijata, klientka zařazena do pořadníku (8. místo)." },
+      { at: now - 4 * DAY, from: "provider", text: "Žádost přijata, klientka zařazena do pořadníku." },
     ],
   },
   {

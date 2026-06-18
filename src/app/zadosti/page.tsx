@@ -11,7 +11,7 @@ import { AppShell } from "@/components/app-shell";
 import { useApplications } from "@/lib/applications-context";
 import {
   stageMeta, chanceMeta, careKindText, timeAgo, formatDate,
-  careKindAccent, PROGRESS_STEPS, progressIndex,
+  careKindAccent,
   type Application, type AppStage, type CareKind,
 } from "@/data/applications";
 import { providers } from "@/data/providers";
@@ -75,9 +75,9 @@ function Inner() {
             Potřebuje vaši reakci
             <span className="text-[0.8333rem] font-normal text-ink-2">({needsYou.length})</span>
           </h2>
-          <div className="overflow-hidden rounded-xl2 border border-line bg-surface">
-            {needsYou.map((a, i) => (
-              <ListRow key={a.id} app={a} divider={i > 0} onEnd={() => setConfirmEnd(a)} onDetail={() => setDetailApp(a)} />
+          <div className="space-y-3">
+            {needsYou.map((a) => (
+              <ListRow key={a.id} app={a} onEnd={() => setConfirmEnd(a)} onDetail={() => setDetailApp(a)} />
             ))}
           </div>
         </section>
@@ -91,9 +91,9 @@ function Inner() {
             Čeká se na vyjádření
             <span className="text-[0.8333rem] font-normal text-ink-2">({waiting.length})</span>
           </h2>
-          <div className="overflow-hidden rounded-xl2 border border-line bg-surface">
-            {waiting.map((a, i) => (
-              <ListRow key={a.id} app={a} divider={i > 0} onEnd={() => setConfirmEnd(a)} onDetail={() => setDetailApp(a)} />
+          <div className="space-y-3">
+            {waiting.map((a) => (
+              <ListRow key={a.id} app={a} onEnd={() => setConfirmEnd(a)} onDetail={() => setDetailApp(a)} />
             ))}
           </div>
         </section>
@@ -122,8 +122,8 @@ function CareIcon({ kind, size = 22 }: { kind: CareKind; size?: number }) {
 }
 
 /* ─── SEZNAM řádek ─── */
-function ListRow({ app, divider, onEnd, onDetail }: {
-  app: Application; divider: boolean; onEnd: () => void; onDetail: () => void;
+function ListRow({ app, onEnd, onDetail }: {
+  app: Application; onEnd: () => void; onDetail: () => void;
 }) {
   const meta = stageMeta[app.stage];
   const ended = app.stage === "ended";
@@ -132,12 +132,12 @@ function ListRow({ app, divider, onEnd, onDetail }: {
   const accent = careKindAccent[app.careKind];
 
   return (
-    <div className={`relative flex ${divider ? "border-t border-line" : ""}`}>
+    <div className="relative flex overflow-hidden rounded-xl2 border border-line bg-surface shadow-soft">
       {/* Svislý barevný pruh — kotva podle typu péče */}
       <span className="w-1.5 shrink-0" style={{ background: accent.bar }} aria-hidden />
 
       <div className="min-w-0 flex-1 px-4 py-3 sm:px-5">
-        {/* Zóna 1: identita — ikona + dominantní název */}
+        {/* Zóna 1: identita — ikona + dominantní název + Detail vpravo */}
         <div className="flex items-start gap-3">
           <span
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
@@ -162,6 +162,12 @@ function ListRow({ app, divider, onEnd, onDetail }: {
               <span className="flex items-center gap-1 text-ink-3"><Send size={12} /> Podáno {formatDate(app.submittedAt)}</span>
             </div>
           </div>
+          <button
+            onClick={onDetail}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line-2 bg-surface px-3.5 py-2 text-[0.8667rem] font-medium text-ink hover:border-sage-bd hover:bg-sage-l a11y-tap"
+          >
+            Zobrazit detail
+          </button>
         </div>
 
         {/* Zóna 2: stav */}
@@ -180,12 +186,9 @@ function ListRow({ app, divider, onEnd, onDetail }: {
             </span>
           </div>
         ) : (
-          // Skupina „Čeká se" — kompaktní textový stav + cesta
+          // Skupina „Čeká se" — kompaktní textový stav
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-paper px-3.5 py-2.5">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="text-[0.9333rem] font-semibold text-ink">{app.stateLabel}</span>
-              {!ended && <StagePath app={app} />}
-            </div>
+            <span className="text-[0.9333rem] font-semibold text-ink">{app.stateLabel}</span>
             <span className="flex items-center gap-3 text-[0.8667rem]">
               <span className="flex items-center gap-1 text-ink-2"><Clock size={14} /> {app.waitEstimate}</span>
               {!ended && <ChanceDot app={app} />}
@@ -193,40 +196,25 @@ function ListRow({ app, divider, onEnd, onDetail }: {
           </div>
         )}
 
-        {/* Zóna 3: akce — kompaktní řádek */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          {needsAction && <PrimaryCTA app={app} />}
-          <button
-            onClick={onDetail}
-            className="flex items-center gap-1.5 rounded-lg border border-line-2 bg-surface px-3.5 py-2 text-[0.8667rem] font-medium text-ink hover:border-sage-bd hover:bg-sage-l a11y-tap"
-          >
-            Zobrazit detail
-          </button>
-          {needsAction && (
+        {/* Zóna 3: akce — hlavní vlevo, Ukončit odsazené vpravo a výstražné */}
+        {needsAction && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <PrimaryCTA app={app} />
             <button
               onClick={onEnd}
-              className="flex items-center gap-1.5 rounded-lg border border-line-2 px-3 py-2 text-[0.8667rem] font-medium text-ink-2 hover:bg-surface-2 a11y-tap"
+              className="ml-auto flex items-center gap-1.5 rounded-lg border border-peach-bd px-3 py-2 text-[0.8667rem] font-medium text-peach hover:border-peach hover:bg-peach-l a11y-tap"
             >
               <X size={15} /> Ukončit
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ─── Kompaktní textová cesta žádosti (nahrazuje velkou progres-lištu) ─── */
-function StagePath({ app }: { app: Application }) {
-  const current = progressIndex(app.stage);
-  const label = PROGRESS_STEPS[current] ?? PROGRESS_STEPS[PROGRESS_STEPS.length - 1];
-  return (
-    <span className="hidden items-center gap-1.5 whitespace-nowrap text-[0.8rem] text-ink-3 sm:flex">
-      <span className="h-1.5 w-1.5 rounded-full bg-sage" aria-hidden />
-      Krok {current + 1} ze {PROGRESS_STEPS.length} · {label}
-    </span>
-  );
-}
+
 
 /* ─── Detail overlay žádosti ─── */
 const docIcon = {

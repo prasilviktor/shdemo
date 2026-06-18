@@ -310,30 +310,30 @@ function Header({ title, greeting, userName }: { title: string; greeting: boolea
 
       {/* Prostřední část — buď prázdná, nebo zelená lišta výběru */}
       {selecting ? (
-        <div className="mx-2 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl bg-sage-d px-3 py-2 text-white sm:mx-4 sm:gap-3 sm:px-4">
+        <div className="mx-auto flex h-10 min-w-0 max-w-2xl flex-1 items-center gap-2.5 overflow-hidden rounded-xl bg-sage-d px-3 text-white sm:gap-3 sm:px-4">
           <ClipboardCheck size={18} className="shrink-0" />
-          <div className="min-w-0 flex-1">
-            <span className="text-[0.9333rem] font-semibold">
+          <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
+            <span className="text-[0.8667rem] font-semibold">
               {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"}
             </span>
-            <span className="ml-2 hidden truncate text-[0.8rem] text-white/70 lg:inline">{names}</span>
+            <span className="ml-2 hidden text-[0.8rem] text-white/70 lg:inline">{names}</span>
           </div>
           <button
             onClick={clear}
-            className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-[0.8rem] text-white/80 hover:bg-white/10 sm:flex a11y-tap"
+            className="hidden shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[0.8rem] text-white/80 hover:bg-white/10 sm:flex"
           >
             <X size={15} /> Zrušit
           </button>
           <button
             onClick={clear}
             aria-label="Zrušit výběr"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/80 hover:bg-white/10 sm:hidden"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/80 hover:bg-white/10 sm:hidden"
           >
             <X size={17} />
           </button>
           <button
             onClick={() => router.push("/poptavka")}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[0.8667rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap sm:px-4 sm:py-2"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[0.8667rem] font-semibold text-sage-d hover:bg-white/90"
           >
             Poptat <ArrowRight size={15} />
           </button>
