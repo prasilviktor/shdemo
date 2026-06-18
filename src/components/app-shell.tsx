@@ -178,35 +178,11 @@ export function AppShell({
       </aside>
 
       {/* ───────── Header (fixed top) ───────── */}
-      <header
-        className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-4 border-b border-line bg-surface px-4 sm:px-7 md:left-[240px]"
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-      >
-        <div className="md:hidden"><Logo /></div>
-        <div className="hidden text-[1rem] md:block">
-          {greeting && <span className="text-ink-2">Dobrý den, {firstName(user.displayName)} — </span>}
-          <span className="font-medium text-ink">{title}</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2.5">
-          <a
-            href={PHONE_TEL}
-            aria-label={`Zavolat na ${PHONE_DISPLAY}`}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-sage-bd bg-sage-l text-sage-d md:hidden"
-          >
-            <Phone size={16} />
-          </a>
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-2">
-            <Bell size={16} />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-peach" />
-          </button>
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-sage-bd bg-sage-l text-[0.8rem] font-semibold text-sage-d">
-            {seniorInitials(user.displayName)}
-          </span>
-        </div>
-      </header>
-
-      {/* ───────── Lišta výběru (fixní pod hlavičkou) ───────── */}
-      <SelectionBar />
+      <Header
+        title={title}
+        greeting={greeting}
+        userName={user.displayName}
+      />
 
       {/* ───────── Main content ───────── */}
       {/*
@@ -221,7 +197,6 @@ export function AppShell({
           paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        <SelectionBarSpacer />
         {children}
       </main>
 
@@ -311,52 +286,78 @@ function seniorInitials(name: string) {
   return (name || "?").slice(0, 2).toUpperCase();
 }
 
-/* ─── Výrazná lišta výběru zařízení k poptávce ─── */
-function SelectionBar() {
+/* ─── Hlavička: v běžném stavu název + ikony, při výběru zařízení se promění
+       v zelenou lištu výběru (počet, názvy, Zrušit, Poptat). ─── */
+function Header({ title, greeting, userName }: { title: string; greeting: boolean; userName: string }) {
   const { selected, count, clear } = useSelection();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Na samotné stránce poptávky lištu neukazujeme
-  if (count === 0 || pathname === "/poptavka") return null;
-
+  const selecting = count > 0 && pathname !== "/poptavka";
   const chosen = providers.filter((p) => selected.includes(p.id));
   const names = chosen.map((p) => p.name).join(" · ");
 
   return (
-    <div
-      className="fixed inset-x-0 z-20 border-b border-sage-d/20 bg-sage-d px-4 md:left-[240px] sm:px-7"
-      style={{ top: "calc(56px + env(safe-area-inset-top, 0px))" }}
+    <header
+      className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface px-4 sm:px-7 md:left-[240px]"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 text-white">
-        <ClipboardCheck size={19} className="shrink-0" />
-        <div className="min-w-0 flex-1">
-          <span className="text-[0.9333rem] font-semibold">
-            {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"}
-          </span>
-          <span className="ml-2 hidden truncate text-[0.8rem] text-white/70 sm:inline">{names}</span>
-        </div>
-        <button
-          onClick={clear}
-          className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-[0.8rem] text-white/80 hover:bg-white/10 sm:flex"
-        >
-          <X size={15} /> Zrušit
-        </button>
-        <button
-          onClick={() => router.push("/poptavka")}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[0.8667rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap"
-        >
-          Poptat <ArrowRight size={15} />
-        </button>
+      <div className="md:hidden"><Logo /></div>
+      <div className="hidden whitespace-nowrap text-[1rem] md:block">
+        {greeting && <span className="text-ink-2">Dobrý den, {firstName(userName)} — </span>}
+        <span className="font-medium text-ink">{title}</span>
       </div>
-    </div>
-  );
-}
 
-/* Mezera pod hlavičkou, když je lišta výběru aktivní (aby nezakrývala obsah). */
-function SelectionBarSpacer() {
-  const { count } = useSelection();
-  const pathname = usePathname();
-  if (count === 0 || pathname === "/poptavka") return null;
-  return <div className="h-14" />;
+      {/* Prostřední část — buď prázdná, nebo zelená lišta výběru */}
+      {selecting ? (
+        <div className="mx-2 flex min-w-0 flex-1 items-center gap-2.5 rounded-xl bg-sage-d px-3 py-2 text-white sm:mx-4 sm:gap-3 sm:px-4">
+          <ClipboardCheck size={18} className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[0.9333rem] font-semibold">
+              {count} {count === 1 ? "zařízení vybráno" : count < 5 ? "zařízení vybrána" : "zařízení vybráno"}
+            </span>
+            <span className="ml-2 hidden truncate text-[0.8rem] text-white/70 lg:inline">{names}</span>
+          </div>
+          <button
+            onClick={clear}
+            className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-[0.8rem] text-white/80 hover:bg-white/10 sm:flex a11y-tap"
+          >
+            <X size={15} /> Zrušit
+          </button>
+          <button
+            onClick={clear}
+            aria-label="Zrušit výběr"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/80 hover:bg-white/10 sm:hidden"
+          >
+            <X size={17} />
+          </button>
+          <button
+            onClick={() => router.push("/poptavka")}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-[0.8667rem] font-semibold text-sage-d hover:bg-white/90 a11y-tap sm:px-4 sm:py-2"
+          >
+            Poptat <ArrowRight size={15} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex-1" />
+      )}
+
+      <div className="flex shrink-0 items-center gap-2.5">
+        <a
+          href={PHONE_TEL}
+          aria-label={`Zavolat na ${PHONE_DISPLAY}`}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-sage-bd bg-sage-l text-sage-d md:hidden"
+        >
+          <Phone size={16} />
+        </a>
+        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-2">
+          <Bell size={16} />
+          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-peach" />
+        </button>
+        <span className="flex h-9 w-9 items-center justify-center rounded-full border border-sage-bd bg-sage-l text-[0.8rem] font-semibold text-sage-d">
+          {seniorInitials(userName)}
+        </span>
+      </div>
+    </header>
+  );
 }

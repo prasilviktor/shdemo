@@ -65,6 +65,32 @@ export function careKindText(k: CareKind) {
   return careKindLabel[k];
 }
 
+/** Barevný akcent podle typu péče — svislý pruh a kruhová ikona na kartě.
+ *  Pomáhá oku okamžitě rozlišit karty bez nutnosti číst název. */
+export const careKindAccent: Record<
+  CareKind,
+  { bar: string; chipBg: string; chipText: string; icon: "building" | "brain" | "home" | "sun" }
+> = {
+  residential:    { bar: "#4A7C5A", chipBg: "#EBF2EC", chipText: "#33603F", icon: "building" },
+  special_regime: { bar: "#2D6A9F", chipBg: "#E6F1FB", chipText: "#2D6A9F", icon: "brain" },
+  home:           { bar: "#92600A", chipBg: "#FBF4E8", chipText: "#92600A", icon: "home" },
+  respite:        { bar: "#C0532F", chipBg: "#FBEEE8", chipText: "#C0532F", icon: "sun" },
+};
+
+/** Kroky cesty žádosti pro vizuální progres-lištu. */
+export const PROGRESS_STEPS = ["Podáno", "Posuzování", "Pořadník", "Nabídka"] as const;
+
+export function progressIndex(stage: AppStage): number {
+  switch (stage) {
+    case "action":   return 1;
+    case "review":   return 1;
+    case "waitlist": return 2;
+    case "offer":    return 3;
+    case "accepted": return 3;
+    default:         return 0;
+  }
+}
+
 export const chanceMeta: Record<
   Chance,
   { label: string; cls: string; dot: string }
