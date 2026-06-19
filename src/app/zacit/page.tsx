@@ -532,12 +532,12 @@ function LocationStep({ a, set, onBack, onNext }: {
         {/* Oblast hledání — Město / Okres / Kraj / KM / Nezáleží */}
         <div>
           <label className="field-label">Oblast hledání</label>
-          <div className="flex gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
             {DISTANCE_MODES.map((m) => (
               <button
                 key={m.v}
                 onClick={() => set({ distanceMode: m.v })}
-                className={`flex-1 rounded-xl border py-2.5 text-[0.8333rem] font-medium transition-colors a11y-tap ${
+                className={`rounded-xl border py-2.5 text-[0.8333rem] font-medium transition-colors a11y-tap ${
                   a.distanceMode === m.v
                     ? "border-sage bg-sage-l text-sage-d"
                     : "border-line bg-surface text-ink-2 hover:border-line-2"

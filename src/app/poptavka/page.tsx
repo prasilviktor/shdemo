@@ -554,7 +554,7 @@ function ResultsView({ providers: sent }: { providers: Provider[] }) {
         ))}
       </div>
 
-      <div className="flex gap-3 border-t border-line px-6 py-4">
+      <div className="flex flex-col gap-2.5 border-t border-line px-6 py-4 sm:flex-row sm:gap-3">
         <Link href="/zadosti" className="btn btn-primary flex-1 text-[0.9333rem]">
           <ArrowRight size={15} /> Přejít na Žádosti
         </Link>

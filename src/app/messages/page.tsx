@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Send, HeartHandshake, Building2, Clock, ChevronRight, MessageSquare } from "lucide-react";
+import { Send, HeartHandshake, Building2, Clock, ChevronRight, MessageSquare, ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { mockThreads } from "@/data/providers";
 import type { Thread, Message } from "@/lib/types";
@@ -39,6 +39,14 @@ function MessagesInner() {
   const [threads, setThreads] = useState<Thread[]>(mockThreads);
   const [activeId, setActiveId] = useState<string>(mockThreads[0]?.id ?? "");
   const [draft, setDraft] = useState("");
+  // Na mobilu přepínáme mezi seznamem a otevřenou konverzací (master-detail).
+  // Na desktopu jsou vidět oba panely zároveň.
+  const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+
+  function openThread(id: string) {
+    setActiveId(id);
+    setMobileView("thread");
+  }
 
   const active = threads.find((t) => t.id === activeId);
 
@@ -77,10 +85,10 @@ function MessagesInner() {
         Veškerá komunikace na jednom místě — koordinátorka i zařízení.
       </p>
 
-      <div className="mt-5 grid h-[calc(100vh-220px)] min-h-[480px] max-h-[680px] grid-cols-1 overflow-hidden rounded-xl2 border border-line bg-surface shadow-soft sm:grid-cols-[300px,1fr]">
+      <div className="mt-5 grid h-[calc(100dvh-200px)] min-h-[460px] grid-cols-1 overflow-hidden rounded-xl2 border border-line bg-surface shadow-soft sm:h-[calc(100dvh-220px)] sm:max-h-[680px] sm:grid-cols-[300px,1fr]">
 
-        {/* ── Levý panel — thready ── */}
-        <div className="flex flex-col overflow-hidden border-b border-line sm:border-b-0 sm:border-r">
+        {/* ── Levý panel — thready (na mobilu jen v režimu „list") ── */}
+        <div className={`flex-col overflow-hidden border-b border-line sm:flex sm:border-b-0 sm:border-r ${mobileView === "list" ? "flex" : "hidden"}`}>
           <div className="shrink-0 overflow-y-auto">
 
             {/* Koordinátorka — vždy nahoře */}
@@ -95,7 +103,7 @@ function MessagesInner() {
                   thread={coordinatorThread}
                   active={activeId === coordinatorThread.id}
                   unread={unreadCount(coordinatorThread)}
-                  onClick={() => setActiveId(coordinatorThread.id)}
+                  onClick={() => openThread(coordinatorThread.id)}
                   isCoordinator
                 />
               </div>
@@ -117,7 +125,7 @@ function MessagesInner() {
                       thread={t}
                       active={activeId === t.id}
                       unread={unreadCount(t)}
-                      onClick={() => setActiveId(t.id)}
+                      onClick={() => openThread(t.id)}
                       isCoordinator={false}
                     />
                   ))}
@@ -126,8 +134,8 @@ function MessagesInner() {
           </div>
         </div>
 
-        {/* ── Pravý panel — konverzace ── */}
-        <div className="flex min-h-0 flex-col">
+        {/* ── Pravý panel — konverzace (na mobilu jen v režimu „thread") ── */}
+        <div className={`min-h-0 flex-col sm:flex ${mobileView === "thread" ? "flex" : "hidden"}`}>
           {active ? (
             <>
               {/* Hlavička konverzace */}
@@ -135,6 +143,13 @@ function MessagesInner() {
                 active.kind === "coordinator" ? "bg-sage-l/30" : "bg-surface"
               }`}>
                 <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={() => setMobileView("list")}
+                    aria-label="Zpět na seznam konverzací"
+                    className="-ml-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-2 sm:hidden"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
                   {active.kind === "coordinator"
                     ? <HeartHandshake size={17} className="shrink-0 text-sage" />
                     : <Building2 size={17} className="shrink-0 text-ink-3" />
