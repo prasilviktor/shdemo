@@ -5,13 +5,17 @@ import Link from "next/link";
 import {
   Check, MapPin, Clock, Star, Sparkles, Send, ChevronRight,
   Plus, X, CheckCircle2, CircleDashed, AlertCircle, ArrowRight,
-  FileText, Phone, Building2,
+  FileText, Phone, Building2, AlertTriangle, Info,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { providers } from "@/data/providers";
 import { useSelection } from "@/lib/selection-context";
 import { useApplications } from "@/lib/applications-context";
 import { useSenior } from "@/lib/senior-context";
+import {
+  relevanceFlags, historyFlag,
+  type RelevanceProfile, type RelevanceFlag, type PriorOutcome,
+} from "@/lib/relevance";
 import type { Provider } from "@/lib/types";
 
 const DOCS_AVAILABLE = [
@@ -73,6 +77,24 @@ function Inner() {
   const visibleProviders = providers.filter((p) => visibleIds.includes(p.id));
   const selectedProviders = providers.filter((p) => selected.includes(p.id));
 
+  // Profil pro relevanční kontroly (rozpočet / region / typ péče).
+  const relevanceProfile: RelevanceProfile = {
+    region: active.location,
+    budgetMax: active.profile.budgetMax,
+    careWanted: active.profile.careWanted,
+  };
+
+  // BOD 3 — historie poptávek (už poptáno / odmítlo nás / plno).
+  // Až bude napojený backend (Firebase), naplní se z dat žádostí.
+  // Dokud je prázdné, žádné historické varování se nezobrazí.
+  const priorOutcomes: PriorOutcome[] = [];
+
+  function flagsFor(p: Provider): RelevanceFlag[] {
+    const list = relevanceFlags(p, relevanceProfile);
+    const h = historyFlag(p.id, priorOutcomes);
+    return h ? [h, ...list] : list;
+  }
+
   function confirmSend() {
     createApplicationsFrom(selectedProviders);
     setSentProviders(selectedProviders);
@@ -112,6 +134,7 @@ function Inner() {
                     key={p.id}
                     provider={p}
                     selected={selected.includes(p.id)}
+                    flags={flagsFor(p)}
                     onToggle={() => toggle(p.id)}
                     onDetail={() => setDetailProvider(p)}
                   />
@@ -125,21 +148,30 @@ function Inner() {
                 <Plus size={16} /> Přidat další domovy
               </Link>
 
-              <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-sage-bd bg-sage-l/30 px-5 py-4">
-                <p className="text-[0.8667rem] text-ink-2">
-                  {count === 0 ? (
-                    <span className="font-medium text-ink">Žádné zařízení není zaškrtnuté</span>
-                  ) : (
-                    <><span className="font-medium text-ink">{count} {count === 1 ? "zařízení zaškrtnuto" : count < 5 ? "zařízení zaškrtnuta" : "zařízení zaškrtnuto"}</span> — poptáme je za vás.</>
-                  )}
-                </p>
-                <button
-                  onClick={() => setStatus("confirming")}
-                  disabled={count === 0}
-                  className="btn btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send size={15} /> Poptat vybraná <ChevronRight size={15} />
-                </button>
+              <div className="mt-5 rounded-xl border border-sage-bd bg-sage-l/30 px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[0.8667rem] text-ink-2">
+                    {count === 0 ? (
+                      <span className="font-medium text-ink">Žádné zařízení není zaškrtnuté</span>
+                    ) : (
+                      <><span className="font-medium text-ink">{count} {count === 1 ? "zařízení zaškrtnuto" : count < 5 ? "zařízení zaškrtnuta" : "zařízení zaškrtnuto"}</span></>
+                    )}
+                  </p>
+                  <button
+                    onClick={() => setStatus("confirming")}
+                    disabled={count === 0}
+                    className="btn btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Pokračovat ke kontrole <ChevronRight size={15} />
+                  </button>
+                </div>
+                {count > 0 && (
+                  <p className="mt-2.5 flex items-start gap-2 text-[0.8333rem] text-ink-2 a11y-dim">
+                    <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-sage" />
+                    Zatím nic neodesíláme. Nejdřív vám ukážeme přehled ke kontrole — poptávku potvrdíte
+                    až na další stránce.
+                  </p>
+                )}
               </div>
             </>
           )}
@@ -149,6 +181,7 @@ function Inner() {
       {status === "confirming" && (
         <ConfirmDialog
           selected={selectedProviders}
+          flagsFor={flagsFor}
           onConfirm={confirmSend}
           onCancel={() => setStatus("idle")}
         />
@@ -167,13 +200,13 @@ function Inner() {
 }
 
 /* ── Karta zařízení ── */
-function FacilityCard({ provider: p, selected, onToggle, onDetail }: {
-  provider: Provider; selected: boolean; onToggle: () => void; onDetail: () => void;
+function FacilityCard({ provider: p, selected, flags, onToggle, onDetail }: {
+  provider: Provider; selected: boolean; flags: RelevanceFlag[]; onToggle: () => void; onDetail: () => void;
 }) {
   const ml = matchLabel(p.matchScore);
   return (
     <div className={`overflow-hidden rounded-xl border-2 transition-all ${
-      selected ? "border-sage shadow-soft" : "border-line bg-surface hover:border-sage-bd"
+      selected ? "border-sage bg-sage-l shadow-soft" : "border-line bg-surface hover:border-sage-bd"
     }`}>
       <div className="flex items-center gap-3 px-4 py-4">
         {/* Checkbox */}
@@ -210,11 +243,26 @@ function FacilityCard({ provider: p, selected, onToggle, onDetail }: {
         {/* Detail tlačítko */}
         <button
           onClick={onDetail}
-          className="shrink-0 flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[0.8rem] text-ink-2 hover:border-sage-bd hover:text-sage-d transition-colors a11y-tap"
+          className="shrink-0 flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[0.8rem] text-ink-2 hover:border-sage-bd hover:text-sage-d transition-colors a11y-tap"
         >
           Detail <ChevronRight size={13} />
         </button>
       </div>
+
+      {/* Relevanční varování — jen když je zařízení zaškrtnuté a něco nesedí */}
+      {selected && flags.length > 0 && (
+        <div className="border-t border-amber-bd bg-amber-l px-4 py-2.5">
+          {flags.map((f, i) => (
+            <div key={i} className="flex items-start gap-2 text-[0.8333rem] text-amber">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                <span className="font-medium">{f.message}</span>
+                {f.hint && <span className="text-amber/80"> {f.hint}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -353,32 +401,65 @@ function InfoBox({ label, value, tone }: { label: string; value: React.ReactNode
 }
 
 /* ── Potvrzovací dialog (samostatná stránka, ne modal) ── */
-function ConfirmDialog({ selected, onConfirm, onCancel }: {
-  selected: Provider[]; onConfirm: () => void; onCancel: () => void;
+function ConfirmDialog({ selected, flagsFor, onConfirm, onCancel }: {
+  selected: Provider[]; flagsFor: (p: Provider) => RelevanceFlag[]; onConfirm: () => void; onCancel: () => void;
 }) {
   const [consent, setConsent] = useState(false);
+  const overMany = selected.length > 8; // soft-doporučení až nad 8 zařízení
   return (
     <div className="mt-5 overflow-hidden rounded-xl border border-line bg-surface shadow-soft">
       <div className="border-b border-line px-6 py-5">
-        <h2 className="font-serif text-[1.3333rem] font-medium text-ink">
+        <div className="text-[0.7333rem] font-semibold uppercase tracking-wider text-sage-d">Poslední krok — kontrola</div>
+        <h2 className="mt-1 font-serif text-[1.3333rem] font-medium text-ink">
           Odeslat poptávky do {selected.length} {selected.length === 1 ? "zařízení" : "zařízení"}?
         </h2>
+        <p className="mt-1 text-[0.8667rem] text-ink-2 a11y-dim">
+          Zkontrolujte si přehled níže. Poptávka se odešle, až dole potvrdíte.
+        </p>
       </div>
+
+      {/* Soft-doporučení — jen když je vybráno hodně zařízení (nad 8) */}
+      {overMany && (
+        <div className="border-b border-sky/20 bg-sky-l/60 px-6 py-4">
+          <div className="flex items-start gap-2.5">
+            <Info size={18} className="mt-0.5 shrink-0 text-sky" />
+            <p className="text-[0.9rem] text-ink-2">
+              <span className="font-medium text-ink">Vybrali jste hodně zařízení.</span>{" "}
+              Doporučujeme oslovit 3–4 najednou — u každého vás čeká návštěva a papírování
+              a koordinátorka se tak může každému věnovat pořádně. Poptat můžete klidně všechna,
+              je to jen naše doporučení.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="divide-y divide-line px-6">
         {selected.map((p) => {
           const ml = matchLabel(p.matchScore);
+          const flags = flagsFor(p);
           return (
-            <div key={p.id} className="flex items-center gap-3 py-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-[0.9333rem] font-medium text-ink">{p.name}</div>
-                <div className="flex items-center gap-1 text-[0.8rem] text-ink-3">
-                  <MapPin size={10} /> {p.location}
+            <div key={p.id} className="py-3">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[0.9333rem] font-medium text-ink">{p.name}</div>
+                  <div className="flex items-center gap-1 text-[0.8rem] text-ink-3">
+                    <MapPin size={10} /> {p.location}
+                  </div>
                 </div>
+                <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[0.7667rem] font-medium ${ml.cls}`}>
+                  {ml.text}
+                </span>
               </div>
-              <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[0.7667rem] font-medium ${ml.cls}`}>
-                {ml.text}
-              </span>
+              {flags.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {flags.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[0.8rem] text-amber">
+                      <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                      <span>{f.message}{f.hint && <span className="text-amber/80"> {f.hint}</span>}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}

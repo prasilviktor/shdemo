@@ -7,7 +7,7 @@ import {
   Heart, Home, Building2, HandHeart, Sun, HelpCircle, MapPin, Clock,
   Brain, Activity, Accessibility, Users, ArrowRight, ArrowLeft, Check,
   Sparkles, ShieldCheck, UserRound, MessageSquare, AlertCircle,
-  Zap, Calendar, Leaf, MoreHorizontal, Phone, Eye, X, Landmark,
+  Zap, Calendar, Leaf, MoreHorizontal, Phone, Eye, X, Landmark, Info, Lock, ChevronDown,
 } from "lucide-react";
 import { Logo } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
@@ -586,6 +586,7 @@ function LocationStep({ a, set, onBack, onNext }: {
               radius={radius}
               everywhere={a.distanceMode === "anywhere"}
               mode={a.distanceMode}
+              activeKraj={a.locationData ? regionToKrajPath(a.locationData.region) : null}
             />
           </div>
         </div>
@@ -596,13 +597,22 @@ function LocationStep({ a, set, onBack, onNext }: {
   );
 }
 
+/* Mapuje region z dat měst na název kraje v KRAJ_PATHS. */
+function regionToKrajPath(region: string): string {
+  if (region === "Praha") return "Praha";
+  if (region === "Kraj Vysočina") return "Kraj Vysočina";
+  return `${region} kraj`;
+}
+
 /* ─── SVG mapa ČR s kraji ─── */
-function CzechMapSVG({ point, radius, everywhere, mode }: {
+function CzechMapSVG({ point, radius, everywhere, mode, activeKraj }: {
   point: { x: number; y: number } | null;
   radius: number;
   everywhere: boolean;
   mode?: string;
+  activeKraj?: string | null;
 }) {
+  const krajMode = mode === "kraj" && !!activeKraj;
   return (
     <svg
       viewBox="0 0 1000 570"
@@ -611,19 +621,29 @@ function CzechMapSVG({ point, radius, everywhere, mode }: {
       style={{ maxHeight: 160 }}
     >
       {/* Kraje — Simplemaps reálné paths */}
-      {KRAJ_PATHS.map((k) => (
-        <path
-          key={k.name}
-          d={k.d}
-          fill={everywhere && point ? "#4A7C5A18" : "#f2efea"}
-          stroke="#ccc8c0"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-      ))}
+      {KRAJ_PATHS.map((k) => {
+        const isActive = krajMode && k.name === activeKraj;
+        return (
+          <path
+            key={k.name}
+            d={k.d}
+            fill={
+              isActive
+                ? "#4A7C5A"
+                : everywhere && point
+                ? "#4A7C5A18"
+                : "#f2efea"
+            }
+            fillOpacity={isActive ? 0.85 : 1}
+            stroke={isActive ? "#33603F" : "#ccc8c0"}
+            strokeWidth={isActive ? "1.8" : "1.2"}
+            strokeLinejoin="round"
+          />
+        );
+      })}
 
-      {/* Okruh kolem bodu */}
-      {point && !everywhere && (
+      {/* Okruh kolem bodu — jen v režimech s poloměrem (ne „kraj") */}
+      {point && !everywhere && !krajMode && (
         <circle
           cx={point.x} cy={point.y} r={radius}
           fill="#4A7C5A" fillOpacity="0.13"
@@ -631,8 +651,8 @@ function CzechMapSVG({ point, radius, everywhere, mode }: {
         />
       )}
 
-      {/* Bod — vybrané město */}
-      {point && (
+      {/* Bod — vybrané město (v režimu kraj skryjeme, kraj mluví sám za sebe) */}
+      {point && !krajMode && (
         <>
           <circle cx={point.x} cy={point.y} r={12} fill="#4A7C5A" fillOpacity="0.25" />
           <circle cx={point.x} cy={point.y} r={6} fill="#4A7C5A" />
@@ -980,6 +1000,13 @@ function SaveProgress({ subject, answers: a, onGuest, onProvider }: {
   subject: string; answers: Answers; onGuest: () => void; onProvider: (p: string) => void;
 }) {
   const [mode, setMode] = useState<"choose" | "register">("choose");
+  const [infoOpen, setInfoOpen] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(true);
+
+  function goRegister() {
+    setSummaryOpen(false); // po volbě uložení tabulku sbalíme, ať se vejde výběr přihlášení
+    setMode("register");
+  }
 
   const conditionsText = a.conditions.length > 0
     ? a.conditions.map((c) => CONDITIONS_LABELS[c] ?? c).join(", ")
@@ -1008,34 +1035,46 @@ function SaveProgress({ subject, answers: a, onGuest, onProvider }: {
         Uložíme vaše odpovědi a doporučení, ať se k nim můžete kdykoliv vrátit.
       </p>
 
-      {/* Přehled zadaných odpovědí */}
-      <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
-        <div className="border-b border-line bg-surface-2 px-4 py-2.5">
-          <span className="text-[0.7333rem] font-semibold uppercase tracking-wider text-ink-3">
-            Co si uložíme
+      {/* Přehled zadaných odpovědí — sbalitelný */}
+      <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface text-left">
+        <button
+          onClick={() => setSummaryOpen((o) => !o)}
+          aria-expanded={summaryOpen}
+          className="flex w-full items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5 text-left a11y-tap"
+        >
+          <span className="flex-1 text-[0.7333rem] font-semibold uppercase tracking-wider text-ink-3">
+            Co si uložíme {!summaryOpen && <span className="normal-case font-normal">· {summaryItems.length} údajů</span>}
           </span>
-        </div>
-        <div>
-          {summaryItems.map((item, i) => (
-            <div
-              key={item.label}
-              className={`flex items-start gap-3 px-4 py-2.5 ${i % 2 === 0 ? "bg-surface" : "bg-paper"} ${i < summaryItems.length - 1 ? "border-b border-line" : ""}`}
-            >
-              <span className="w-28 shrink-0 text-[0.8rem] text-ink-3 pt-0.5">{item.label}</span>
-              <span className="flex-1 text-[0.8667rem] font-medium text-ink leading-snug">{item.value}</span>
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-ink-3 transition-transform ${summaryOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {summaryOpen && (
+          <>
+            <div>
+              {summaryItems.map((item, i) => (
+                <div
+                  key={item.label}
+                  className={`flex items-start gap-3 px-4 py-2.5 ${i % 2 === 0 ? "bg-surface" : "bg-paper"} ${i < summaryItems.length - 1 ? "border-b border-line" : ""}`}
+                >
+                  <span className="w-28 shrink-0 text-[0.8rem] text-ink-3 pt-0.5">{item.label}</span>
+                  <span className="flex-1 text-[0.8667rem] font-medium text-ink leading-snug">{item.value}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 border-t border-sage-bd bg-sage-l/50 px-4 py-2.5">
-          <Check size={13} className="shrink-0 text-sage" strokeWidth={2.5} />
-          <span className="text-[0.8rem] text-sage-d">Váš profil a doporučení budou připraveny</span>
-        </div>
+            <div className="flex items-center gap-2 border-t border-sage-bd bg-sage-l/50 px-4 py-2.5">
+              <Check size={13} className="shrink-0 text-sage" strokeWidth={2.5} />
+              <span className="text-[0.8rem] text-sage-d">Váš profil a doporučení budou připraveny</span>
+            </div>
+          </>
+        )}
       </div>
 
       {mode === "choose" ? (
         <div className="mt-5 space-y-3 text-left">
           <button
-            onClick={() => setMode("register")}
+            onClick={goRegister}
             className="flex w-full items-center gap-3.5 rounded-2xl border border-sage bg-sage-l px-4 py-4 text-left transition-all hover:shadow-soft a11y-tap"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sage text-white">
@@ -1064,31 +1103,71 @@ function SaveProgress({ subject, answers: a, onGuest, onProvider }: {
         </div>
       ) : (
         <div className="mt-5 space-y-2.5 text-left">
-          {/* Ověřená identita */}
-          <button
-            onClick={() => onProvider("bank_id")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-sage-bd bg-sage-l/50 px-4 py-3.5 text-left transition-colors hover:bg-sage-l a11y-tap"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-sage-d">
-              <Landmark size={19} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[0.9667rem] font-medium text-ink">Bankovní identita</span>
-              <span className="block text-[0.8rem] text-ink-2">Přihlášení jako do internetového bankovnictví</span>
-            </span>
-          </button>
-          <button
-            onClick={() => onProvider("identita_obcana")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left transition-colors hover:border-sage-bd a11y-tap"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-sage-d">
-              <ShieldCheck size={19} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[0.9667rem] font-medium text-ink">Identita občana</span>
-              <span className="block text-[0.8rem] text-ink-2">Mobilní klíč, NIA ID nebo eObčanka</span>
-            </span>
-          </button>
+          {/* Oddělení: ověřené přihlášení vs. tabulka shrnutí výše */}
+          <div className="flex items-center gap-2 pt-1 text-[0.7333rem] font-semibold uppercase tracking-wider text-ink-3">
+            <Lock size={13} /> Ověřené přihlášení
+          </div>
+          <p className="text-[0.8333rem] text-ink-2 a11y-dim">
+            Bezpečné přihlášení, které potvrdí vaši totožnost. Nemusíte si pamatovat heslo.
+          </p>
+
+          {/* Bankovní identita */}
+          <div className="overflow-hidden rounded-2xl border border-sage-bd bg-sage-l/50">
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-sage-d">
+                <Landmark size={19} />
+              </span>
+              <button onClick={() => onProvider("bank_id")} className="min-w-0 flex-1 text-left">
+                <span className="block text-[0.9667rem] font-medium text-ink">Bankovní identita</span>
+                <span className="block text-[0.8rem] text-ink-2">Přihlášení jako do internetového bankovnictví</span>
+              </button>
+              <button
+                onClick={() => setInfoOpen(infoOpen === "bank_id" ? null : "bank_id")}
+                aria-label="Co se stane při přihlášení přes Bankovní identitu"
+                aria-expanded={infoOpen === "bank_id"}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-sage-bd bg-surface text-sage-d hover:bg-sage-l"
+              >
+                <Info size={17} />
+              </button>
+            </div>
+            {infoOpen === "bank_id" && (
+              <div className="border-t border-sage-bd/60 bg-surface/70 px-4 py-3 text-[0.8333rem] leading-relaxed text-ink-2">
+                Přihlásíte se přes svou banku — stejně jako do internetového bankovnictví.
+                Banka nám pouze potvrdí vaše jméno. <span className="font-medium text-ink">Nevidíme
+                vaše hesla ani zůstatky a nemáme přístup k vašemu účtu.</span> Slouží jen k ověření,
+                že jste to opravdu vy.
+              </div>
+            )}
+          </div>
+
+          {/* Identita občana */}
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-sage-d">
+                <ShieldCheck size={19} />
+              </span>
+              <button onClick={() => onProvider("identita_obcana")} className="min-w-0 flex-1 text-left">
+                <span className="block text-[0.9667rem] font-medium text-ink">Identita občana</span>
+                <span className="block text-[0.8rem] text-ink-2">Mobilní klíč, NIA ID nebo eObčanka</span>
+              </button>
+              <button
+                onClick={() => setInfoOpen(infoOpen === "identita_obcana" ? null : "identita_obcana")}
+                aria-label="Co se stane při přihlášení přes Identitu občana"
+                aria-expanded={infoOpen === "identita_obcana"}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-sage-d hover:border-sage-bd"
+              >
+                <Info size={17} />
+              </button>
+            </div>
+            {infoOpen === "identita_obcana" && (
+              <div className="border-t border-line bg-paper/60 px-4 py-3 text-[0.8333rem] leading-relaxed text-ink-2">
+                Přihlášení přes oficiální státní systém (Identita občana / NIA).
+                Potvrdí vaši totožnost přes Mobilní klíč, NIA ID nebo eObčanku.
+                <span className="font-medium text-ink"> Stát nám pouze potvrdí vaše jméno —
+                nepředává nám žádné další osobní údaje.</span>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-3 py-1 text-[0.8rem] text-ink-3">
             <span className="h-px flex-1 bg-line" /> nebo <span className="h-px flex-1 bg-line" />
@@ -1116,7 +1195,7 @@ function SaveProgress({ subject, answers: a, onGuest, onProvider }: {
             Pokračovat e-mailem
           </button>
           <button
-            onClick={() => setMode("choose")}
+            onClick={() => { setMode("choose"); setSummaryOpen(true); }}
             className="mt-1 flex w-full items-center justify-center gap-1.5 text-[0.8667rem] text-ink-2 hover:text-ink a11y-tap"
           >
             <ArrowLeft size={15} /> Zpět
